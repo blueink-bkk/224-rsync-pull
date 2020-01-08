@@ -1,0 +1,23 @@
+{
+  "name": "224-rsync-pull",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blueink-bkk/224-rsync-pull.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/blueink-bkk/224-rsync-pull/issues"
+  },
+  "homepage": "https://github.com/blueink-bkk/224-rsync-pull#readme",
+  "dependencies": {
+    "fs-extra": "^8.1.0",
+    "rsyncwrapper": "^3.0.1"
+  }
+}
