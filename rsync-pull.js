@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 const fs = require('fs-extra');
+const path = require('path')
 const rsync = require('rsyncwrapper')
-
+const yaml = require('js-yaml')
 
 /*
     rsync-pull data for /www/ultimheat.co.th/en/new-products.html
@@ -29,34 +30,98 @@ const rsync = require('rsyncwrapper')
 
 console.log('rsync-pull (ultimheat.co.th new-products)');
 
-rsync_pull('/www/ultimheat.co.th/en/new-products.html');
+const new_product_folder = 'Cat32-Ultimheat-EN-P65-P66-BM-20200107';
+
+rsync_pull(new_product_folder);
 
 // ============================================================================
 
 
 // console.log('rsync:', rsync)
 
-function rsync_pull(html_file) {
+
+function rsync_pull(np_folder) {
   rsync({
-    src: 'dkz@caltek.net:/home/ya-bkk/ftp/files/Cat11-Ultimheat-EN-P90-Y3L4-20200107',
+    src: path.join('dkz@caltek.net:/home/ya-bkk/ftp/files',np_folder),
     dest: './tmp',
     recursive: true
-  }, (error, stdout, stderr, cmd)=>{
+  }, async (error, stdout, stderr, cmd)=>{
     console.log({error})
     console.log({stdout})
     console.log({stderr})
     console.log({cmd})
     /*
        Explore .md file
+       ATT: here should be an iterative on each folder (product) in ./tmp
+       Then an iterative on files in each product.
     */
-    const files = fs.readdirSync('./tmp/Cat11-Ultimheat-EN-P90-Y3L4-20200107')
+
+    // here, we traite 1 product....
+    const files = fs.readdirSync(path.join('./tmp',np_folder))
     console.log(files)
-    let md = files.filter(fn=>fn.endsWith('.md')) // always array.
-    if (Array.isArray(md) ) {
+
+    const md =[];
+    const pdf = [];
+    const jpeg = [];
+    const other_fn = [];
+
+    files.forEach(fn=>{
+      if (fn.endsWith('.md')) md.push(fn)
+      else if (fn.endsWith('.jpg')) jpeg.push(fn)
+      else if (fn.endsWith('.pdf')) pdf.push(fn)
+      else other_fn.push(fn)
+    })
+    if (md.length >1) {
       console.log('ALERT Multiple .MD length:',md.length)
-      md = md[0]
     }
+
+    /*
+        MD
+    */
+
     console.log({md})
-  })
+    const v = fs.readFileSync(path.join('./tmp',np_folder,md[0]),'utf8').split('---');
+    console.log(v[1])
+    const metadata = yaml.safeLoad(v[1])
+    console.log({metadata})
+
+    const md_fn = path.join('./tmp',np_folder, md[0]);
+    const err0 = await rsync_move_file(md_fn,`/www/ultimheat.co.th/en/new_products.html-${metadata.article_id}.yaml`); // should be MD.
+    console.log({err0})
+
+
+    /*
+        PDF
+    */
+    const pdf_fn = path.join('./tmp',np_folder,pdf[0]);
+    const err1 = await rsync_move_file(pdf_fn,'/www/ultimheat.co.th/en/pdf');
+    console.log({err1})
+
+    /*
+        jpeg
+    */
+    const jpeg_fn = path.join('./tmp',np_folder,jpeg[0]);
+    const err2 = await rsync_move_file(jpeg_fn,'/www/ultimheat.co.th/new_images');
+    console.log({err2})
+
+
+  }) // rsync
   console.log('rsync-pull started - going async.')
 }
+
+async function rsync_move_file(src,dest) {
+  return new Promise((resolve,reject) =>{
+    rsync({
+      src, dest
+//      recursive: true
+    }, (error, stdout, stderr, cmd)=>{
+      if (error) {
+        console.log({error})
+        console.log({cmd})
+        reject(error);
+        return;
+      }
+      resolve(cmd)
+    }) // rsync
+  }) // promise
+} // rsync_mode
