@@ -28,9 +28,17 @@ const yaml = require('js-yaml')
 */
 
 
+const yargv = require('yargs')
+.alias('v','verbose').count('verbose')
+//.alias('i','instance_name')
+.argv;
+
+//const new_product_folder = 'dkz-product';
+const new_product_folder = yargv._[0];
+
 console.log('rsync-pull (ultimheat.co.th new-products)');
 
-const new_product_folder = 'Cat32-Ultimheat-EN-P65-P66-BM-20200107';
+//const new_product_folder = 'Cat32-Ultimheat-EN-P65-P66-BM-20200107';
 
 rsync_pull(new_product_folder);
 
@@ -86,23 +94,27 @@ function rsync_pull(np_folder) {
     console.log({metadata})
 
     const md_fn = path.join('./tmp',np_folder, md[0]);
-    const err0 = await rsync_move_file(md_fn,`/www/ultimheat.co.th/en/new_products.html-${metadata.article_id}.yaml`); // should be MD.
-    console.log({err0})
+    const retv = await rsync_move_file(md_fn,`/www/ultimheat.co.th/en/new_products.html-${metadata.article_id}.yaml`); // should be MD.
+    console.log({retv})
 
 
     /*
-        PDF
+        move PDF if exists.
     */
-    const pdf_fn = path.join('./tmp',np_folder,pdf[0]);
-    const err1 = await rsync_move_file(pdf_fn,'/www/ultimheat.co.th/en/pdf');
-    console.log({err1})
+    if (pdf.length >0) {
+      const pdf_fn = path.join('./tmp',np_folder,pdf[0]);
+      const {err} = await rsync_move_file(pdf_fn,'/www/ultimheat.co.th/en/pdf');
+      console.log({err1})
+    }
 
     /*
         jpeg
     */
-    const jpeg_fn = path.join('./tmp',np_folder,jpeg[0]);
-    const err2 = await rsync_move_file(jpeg_fn,'/www/ultimheat.co.th/new_images');
-    console.log({err2})
+    if (jpeg.length >0) {
+      const jpeg_fn = path.join('./tmp',np_folder,jpeg[0]);
+      const {err} = await rsync_move_file(jpeg_fn,'/www/ultimheat.co.th/new_images');
+      console.log({err2})
+    }
 
 
   }) // rsync
@@ -121,7 +133,7 @@ async function rsync_move_file(src,dest) {
         reject(error);
         return;
       }
-      resolve(cmd)
+      resolve({error,stdout,stderr,cmd})
     }) // rsync
   }) // promise
 } // rsync_mode
